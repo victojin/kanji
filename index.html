@@ -3,33 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일본어 한자 암기박사1</title>
+    <title>일한암1 - 스마트 체크</title>
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --bg: #f0f2f5; }
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
+        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --bg: #f0f2f5; }
+        body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
-        .kanji-box { font-size: 100px; margin: 20px 0; color: #333; font-weight: bold; cursor: pointer; user-select: none; }
-        .answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; cursor: pointer; position: relative; }
+        .star-display { color: #f1c40f; font-size: 20px; height: 24px; margin-bottom: 10px; }
+        .answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
         .mean { font-size: 26px; font-weight: bold; color: #e74c3c; text-align: center; margin-bottom: 15px; }
         .readings { font-size: 18px; color: #444; background: #f9f9f9; padding: 15px; border-radius: 12px; line-height: 1.8; }
         .words { font-size: 15px; color: #666; margin-top: 15px; padding: 10px; border-left: 4px solid var(--primary); background: #f1f7ff; }
-        .btn-container { margin-top: 25px; }
-        button { padding: 16px; font-size: 18px; cursor: pointer; border: none; border-radius: 14px; width: 100%; font-weight: bold; transition: 0.2s; outline: none; }
+        .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        button { padding: 16px; font-size: 18px; cursor: pointer; border: none; border-radius: 14px; width: 100%; font-weight: bold; transition: 0.2s; }
         .btn-show { background-color: var(--primary); color: white; }
         .btn-next { background-color: var(--success); color: white; }
-        button:active { transform: scale(0.98); }
-        .tip { font-size: 12px; color: #aaa; margin-top: 15px; }
+        .btn-warn { background-color: var(--warning); color: white; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loader">데이터를 불러오는 중...</div>
+    <div id="loader">데이터를 동기화 중...</div>
     <div id="quiz-content" style="display:none;">
         <div class="progress" id="progress-text">0 / 0</div>
+        <div class="star-display" id="star-display"></div>
         <div class="kanji-box" id="kanji-display" onclick="toggleLogic()"></div>
+        
         <div class="answer-area" id="answer-area">
             <div class="mean" id="mean-display"></div>
             <div class="readings">
@@ -38,33 +40,37 @@
             </div>
             <div class="words" id="words-display"></div>
         </div>
+
         <div class="btn-container">
-            <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인</button>
-            <button class="btn-next" id="btn-next" onclick="nextQuestion()" style="display:none;">다음 문제</button>
+            <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인 (Enter)</button>
+            <button class="btn-next" id="btn-next" onclick="nextQuestion()" style="display:none;">다음 문제 (Enter)</button>
+            <button class="btn-warn" id="btn-warn" onclick="addCheck()" style="display:none;">헷갈림 (별 추가)</button>
         </div>
-        <div class="tip">PC에서는 엔터키(Enter)를 눌러보세요!</div>
     </div>
 </div>
 
 <script>
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCV0avG8jn-DpN-L1O1G-WdZxRDVhZ6SRkqSJ2TeZxKVRlmtvo1ysoNpROE6oVNyWUyOsxtYQFkl0P/pub?gid=0&single=true&output=csv';
+    // ⚠️ 여기에 새로 배포한 Google Apps Script URL을 넣으세요.
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyrgHy-gUkt9otTLW43_uR1rX2c5hvYupdF_S97fguZ0HQ3Q23whzVyEHFGXwjVRdut/exec'; 
 
     let kanjiData = [];
     let currentIdx = 0;
-    let isShowingAnswer = false; // 현재 정답이 보이는 상태인지 체크
+    let isShowingAnswer = false;
 
     async function loadData() {
         try {
-            const response = await fetch(CSV_URL);
-            const text = await response.text();
-            const rows = text.split(/\r?\n/).slice(1);
-            kanjiData = rows.map(row => {
-                const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
-                if (cols.length < 4) return null;
-                return {
-                    kanji: cols[0], mean: cols[1], kun: cols[2] || "ー", on: cols[3] || "ー", words: cols[5] || "예시 없음"
-                };
-            }).filter(item => item && item.kanji);
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            // 시트 구조: 한자(0), 뜻(1), 훈독(2), 음독(3), 체크(4), 단어(5)
+            kanjiData = data.slice(1).map(cols => ({
+                kanji: cols[0],
+                mean: cols[1],
+                kun: cols[2] || "ー",
+                on: cols[3] || "ー",
+                stars: parseInt(cols[4]) || 0,
+                words: cols[5] || "예시 없음"
+            })).filter(item => item.kanji);
 
             if (kanjiData.length > 0) {
                 shuffleData();
@@ -73,7 +79,7 @@
                 updateCard();
             }
         } catch (e) {
-            document.getElementById('loader').innerText = "❌ 로드 실패";
+            document.getElementById('loader').innerText = "❌ 시트 연결 실패";
         }
     }
 
@@ -85,6 +91,7 @@
         const item = kanjiData[currentIdx];
         document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${kanjiData.length}`;
         document.getElementById('kanji-display').innerText = item.kanji;
+        document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5)); // 최대 5개 표시
         document.getElementById('mean-display').innerText = item.mean;
         document.getElementById('kun-display').innerText = item.kun;
         document.getElementById('on-display').innerText = item.on;
@@ -93,6 +100,9 @@
         document.getElementById('answer-area').style.display = 'none';
         document.getElementById('btn-show').style.display = 'block';
         document.getElementById('btn-next').style.display = 'none';
+        document.getElementById('btn-warn').style.display = 'none';
+        document.getElementById('btn-warn').disabled = false;
+        document.getElementById('btn-warn').innerText = "헷갈림 (별 추가)";
         isShowingAnswer = false;
     }
 
@@ -100,33 +110,47 @@
         document.getElementById('answer-area').style.display = 'block';
         document.getElementById('btn-show').style.display = 'none';
         document.getElementById('btn-next').style.display = 'block';
+        document.getElementById('btn-warn').style.display = 'block';
         isShowingAnswer = true;
+    }
+
+    async function addCheck() {
+        const item = kanjiData[currentIdx];
+        const btn = document.getElementById('btn-warn');
+        btn.disabled = true;
+        btn.innerText = "시트 기록 중...";
+
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ kanji: item.kanji })
+            });
+            item.stars++;
+            document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
+            btn.innerText = "기록 완료!";
+        } catch (e) {
+            btn.innerText = "기록 실패";
+            btn.disabled = false;
+        }
     }
 
     function nextQuestion() {
         currentIdx++;
         if (currentIdx >= kanjiData.length) {
-            alert("학습이 완료되었습니다! 다시 섞습니다.");
+            alert("모든 한자를 보았습니다. 다시 섞습니다.");
             currentIdx = 0;
             shuffleData();
         }
         updateCard();
     }
 
-    // [핵심] 정답 보기와 다음 문제를 전환하는 로직
     function toggleLogic() {
-        if (!isShowingAnswer) {
-            showAnswer();
-        } else {
-            nextQuestion();
-        }
+        if (!isShowingAnswer) showAnswer();
+        else nextQuestion();
     }
 
-    // [핵심] 엔터키 이벤트 리스너 추가
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            toggleLogic();
-        }
+        if (e.key === 'Enter') toggleLogic();
     });
 
     loadData();
