@@ -11,22 +11,14 @@
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
         
         #mode-selection { display: flex; flex-direction: column; gap: 15px; }
-        .mode-btn { padding: 20px; font-size: 18px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        .mode-btn { padding: 20px; font-size: 18px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; position: relative; }
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
+        .count-badge { font-size: 14px; font-weight: normal; opacity: 0.9; margin-left: 8px; }
         
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
         .star-display { color: #f1c40f; font-size: 20px; height: 24px; margin-bottom: 5px; }
-        
-        /* [중요] 한자 박스 서체 수정: 일본어 폰트를 최우선 적용 */
-        .kanji-box { 
-            font-size: 100px; 
-            margin: 10px 0; 
-            color: #333; 
-            font-weight: bold; 
-            cursor: pointer;
-            font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
-        }
+        .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
         
         .answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
         .mean { font-size: 26px; font-weight: bold; color: var(--danger); text-align: center; margin-bottom: 15px; }
@@ -49,8 +41,12 @@
 
     <div id="mode-selection" style="display:none;">
         <h2 style="margin-bottom:20px;">학습 모드 선택</h2>
-        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 테스트</button>
-        <button class="mode-btn btn-star-only" onclick="startStudy('star')">헷갈린 한자만 (★)</button>
+        <button class="mode-btn btn-all" onclick="startStudy('all')">
+            전체 한자 테스트 <span class="count-badge" id="count-all"></span>
+        </button>
+        <button class="mode-btn btn-star-only" onclick="startStudy('star')">
+            헷갈린 한자만 <span class="count-badge" id="count-star"></span>
+        </button>
     </div>
 
     <div id="quiz-content" style="display:none;">
@@ -94,6 +90,11 @@
             allData = data.slice(1).map(cols => ({
                 kanji: cols[0], mean: cols[1], kun: cols[2]||"ー", on: cols[3]||"ー", stars: parseInt(cols[4])||0, words: cols[5]||"예시 없음"
             })).filter(i => i.kanji);
+
+            // 숫자 미리보기 업데이트
+            const starCount = allData.filter(i => i.stars > 0).length;
+            document.getElementById('count-all').innerText = `(${allData.length}개)`;
+            document.getElementById('count-star').innerText = `(${starCount}개)`;
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('mode-selection').style.display = 'flex';
