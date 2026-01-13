@@ -3,30 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일한암1 - 스마트 체크</title>
+    <title>일한암 스마트 학습기</title>
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --bg: #f0f2f5; }
+        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5; }
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
+        
+        /* 모드 선택 화면 */
+        #mode-selection { display: flex; flex-direction: column; gap: 15px; }
+        .mode-btn { padding: 20px; font-size: 18px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-all { background: var(--primary); }
+        .btn-star-only { background: var(--warning); }
+        
+        /* 학습 화면 */
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
-        .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; cursor: pointer; position: relative; }
-        .star-display { color: #f1c40f; font-size: 20px; height: 24px; margin-bottom: 10px; }
+        .star-display { color: #f1c40f; font-size: 20px; height: 24px; margin-bottom: 5px; }
+        .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; cursor: pointer; }
         .answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
-        .mean { font-size: 26px; font-weight: bold; color: #e74c3c; text-align: center; margin-bottom: 15px; }
+        .mean { font-size: 26px; font-weight: bold; color: var(--danger); text-align: center; margin-bottom: 15px; }
         .readings { font-size: 18px; color: #444; background: #f9f9f9; padding: 15px; border-radius: 12px; line-height: 1.8; }
         .words { font-size: 15px; color: #666; margin-top: 15px; padding: 10px; border-left: 4px solid var(--primary); background: #f1f7ff; }
+        
         .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-        button { padding: 16px; font-size: 18px; cursor: pointer; border: none; border-radius: 14px; width: 100%; font-weight: bold; transition: 0.2s; }
-        .btn-show { background-color: var(--primary); color: white; }
-        .btn-next { background-color: var(--success); color: white; }
-        .btn-warn { background-color: var(--warning); color: white; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        button { padding: 16px; font-size: 16px; cursor: pointer; border: none; border-radius: 14px; font-weight: bold; transition: 0.2s; }
+        .btn-show { background: var(--primary); color: white; }
+        .btn-next { background: var(--success); color: white; }
+        .btn-add-star { background: var(--warning); color: white; }
+        .btn-remove-star { background: #95a5a6; color: white; }
+        button:disabled { opacity: 0.5; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loader">데이터를 동기화 중...</div>
+    <div id="loader">시트 데이터 연결 중...</div>
+
+    <div id="mode-selection" style="display:none;">
+        <h2 style="margin-bottom:20px;">학습 모드 선택</h2>
+        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 테스트</button>
+        <button class="mode-btn btn-star-only" onclick="startStudy('star')">헷갈린 한자만 (★)</button>
+    </div>
+
     <div id="quiz-content" style="display:none;">
         <div class="progress" id="progress-text">0 / 0</div>
         <div class="star-display" id="star-display"></div>
@@ -44,54 +61,61 @@
         <div class="btn-container">
             <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인 (Enter)</button>
             <button class="btn-next" id="btn-next" onclick="nextQuestion()" style="display:none;">다음 문제 (Enter)</button>
-            <button class="btn-warn" id="btn-warn" onclick="addCheck()" style="display:none;">헷갈림 (별 추가)</button>
+            <div id="star-controls" style="display:none; display:flex; gap:10px;">
+                <button class="btn-add-star" id="btn-add" style="flex:1" onclick="updateStar('add')">별 추가</button>
+                <button class="btn-remove-star" id="btn-remove" style="flex:1" onclick="updateStar('remove')">별 없애기</button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // ⚠️ 여기에 새로 배포한 Google Apps Script URL을 넣으세요.
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyrgHy-gUkt9otTLW43_uR1rX2c5hvYupdF_S97fguZ0HQ3Q23whzVyEHFGXwjVRdut/exec'; 
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyzBFZEpHR2d53J66w2X1Unuz09Xzf-P2iPlIP_7aazpCOkhduvQqLJSiUlSJNS0fg5/exec'; 
 
-    let kanjiData = [];
+    let allData = [];
+    let studyData = [];
     let currentIdx = 0;
     let isShowingAnswer = false;
 
+    // 데이터 초기 로드
     async function loadData() {
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
-            
-            // 시트 구조: 한자(0), 뜻(1), 훈독(2), 음독(3), 체크(4), 단어(5)
-            kanjiData = data.slice(1).map(cols => ({
-                kanji: cols[0],
-                mean: cols[1],
-                kun: cols[2] || "ー",
-                on: cols[3] || "ー",
-                stars: parseInt(cols[4]) || 0,
-                words: cols[5] || "예시 없음"
-            })).filter(item => item.kanji);
+            allData = data.slice(1).map(cols => ({
+                kanji: cols[0], mean: cols[1], kun: cols[2]||"ー", on: cols[3]||"ー", stars: parseInt(cols[4])||0, words: cols[5]||"예시 없음"
+            })).filter(i => i.kanji);
 
-            if (kanjiData.length > 0) {
-                shuffleData();
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('quiz-content').style.display = 'block';
-                updateCard();
-            }
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('mode-selection').style.display = 'flex';
         } catch (e) {
-            document.getElementById('loader').innerText = "❌ 시트 연결 실패";
+            document.getElementById('loader').innerText = "❌ 데이터 로드 실패";
         }
     }
 
-    function shuffleData() {
-        kanjiData.sort(() => Math.random() - 0.5);
+    // 모드 선택 및 시작
+    function startStudy(mode) {
+        if (mode === 'star') {
+            studyData = allData.filter(i => i.stars > 0);
+            if (studyData.length === 0) {
+                alert("별이 달린 한자가 없습니다! 전체 모드로 시작합니다.");
+                studyData = [...allData];
+            }
+        } else {
+            studyData = [...allData];
+        }
+
+        studyData.sort(() => Math.random() - 0.5);
+        document.getElementById('mode-selection').style.display = 'none';
+        document.getElementById('quiz-content').style.display = 'block';
+        updateCard();
     }
 
     function updateCard() {
-        const item = kanjiData[currentIdx];
-        document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${kanjiData.length}`;
+        const item = studyData[currentIdx];
+        document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${studyData.length}`;
         document.getElementById('kanji-display').innerText = item.kanji;
-        document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5)); // 최대 5개 표시
+        document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
         document.getElementById('mean-display').innerText = item.mean;
         document.getElementById('kun-display').innerText = item.kun;
         document.getElementById('on-display').innerText = item.on;
@@ -100,9 +124,7 @@
         document.getElementById('answer-area').style.display = 'none';
         document.getElementById('btn-show').style.display = 'block';
         document.getElementById('btn-next').style.display = 'none';
-        document.getElementById('btn-warn').style.display = 'none';
-        document.getElementById('btn-warn').disabled = false;
-        document.getElementById('btn-warn').innerText = "헷갈림 (별 추가)";
+        document.getElementById('star-controls').style.setProperty('display', 'none', 'important');
         isShowingAnswer = false;
     }
 
@@ -110,38 +132,32 @@
         document.getElementById('answer-area').style.display = 'block';
         document.getElementById('btn-show').style.display = 'none';
         document.getElementById('btn-next').style.display = 'block';
-        document.getElementById('btn-warn').style.display = 'block';
+        document.getElementById('star-controls').style.setProperty('display', 'flex', 'important');
         isShowingAnswer = true;
     }
 
-    async function addCheck() {
-        const item = kanjiData[currentIdx];
-        const btn = document.getElementById('btn-warn');
-        btn.disabled = true;
-        btn.innerText = "시트 기록 중...";
+    async function updateStar(action) {
+        const item = studyData[currentIdx];
+        const btnAdd = document.getElementById('btn-add');
+        const btnRem = document.getElementById('btn-remove');
+        btnAdd.disabled = btnRem.disabled = true;
 
         try {
-            await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ kanji: item.kanji })
-            });
-            item.stars++;
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ kanji: item.kanji, action: action }) });
+            item.stars = (action === 'add') ? item.stars + 1 : Math.max(0, item.stars - 1);
             document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
-            btn.innerText = "기록 완료!";
-        } catch (e) {
-            btn.innerText = "기록 실패";
-            btn.disabled = false;
-        }
+        } catch (e) { alert("기록 실패"); }
+        btnAdd.disabled = btnRem.disabled = false;
     }
 
     function nextQuestion() {
         currentIdx++;
-        if (currentIdx >= kanjiData.length) {
-            alert("모든 한자를 보았습니다. 다시 섞습니다.");
-            currentIdx = 0;
-            shuffleData();
+        if (currentIdx >= studyData.length) {
+            alert("학습 완료! 초기화면으로 돌아갑니다.");
+            location.reload();
+        } else {
+            updateCard();
         }
-        updateCard();
     }
 
     function toggleLogic() {
