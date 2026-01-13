@@ -6,15 +6,15 @@
     <title>일한암 스마트 학습기</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5; }
+        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5; --gray: #95a5a6; }
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }
         
         #mode-selection { display: flex; flex-direction: column; gap: 15px; }
-        .mode-btn { padding: 20px; font-size: 18px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; position: relative; }
+        .mode-btn { padding: 20px; font-size: 18px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
-        .count-badge { font-size: 14px; font-weight: normal; opacity: 0.9; margin-left: 8px; }
+        .count-badge { font-size: 14px; font-weight: normal; opacity: 0.85; margin-left: 5px; }
         
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
         .star-display { color: #f1c40f; font-size: 20px; height: 24px; margin-bottom: 5px; }
@@ -26,27 +26,25 @@
         .words { font-size: 15px; color: #666; margin-top: 15px; padding: 10px; border-left: 4px solid var(--primary); background: #f1f7ff; }
         
         .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .main-controls { display: flex; gap: 10px; }
         button { padding: 16px; font-size: 16px; cursor: pointer; border: none; border-radius: 14px; font-weight: bold; transition: 0.2s; }
-        .btn-show { background: var(--primary); color: white; }
-        .btn-next { background: var(--success); color: white; }
+        .btn-show { background: var(--primary); color: white; flex: 3; }
+        .btn-prev { background: var(--gray); color: white; flex: 1; }
+        .btn-next { background: var(--success); color: white; width: 100%; }
         .btn-add-star { background: var(--warning); color: white; }
-        .btn-remove-star { background: #95a5a6; color: white; }
-        button:disabled { opacity: 0.5; }
+        .btn-remove-star { background: var(--gray); color: white; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="loader">시트 데이터 연결 중...</div>
+    <div id="loader">데이터를 동기화 중...</div>
 
     <div id="mode-selection" style="display:none;">
         <h2 style="margin-bottom:20px;">학습 모드 선택</h2>
-        <button class="mode-btn btn-all" onclick="startStudy('all')">
-            전체 한자 테스트 <span class="count-badge" id="count-all"></span>
-        </button>
-        <button class="mode-btn btn-star-only" onclick="startStudy('star')">
-            헷갈린 한자만 <span class="count-badge" id="count-star"></span>
-        </button>
+        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 <span class="count-badge" id="count-all"></span></button>
+        <button class="mode-btn btn-star-only" onclick="startStudy('star')">헷갈린 한자 <span class="count-badge" id="count-star"></span></button>
     </div>
 
     <div id="quiz-content" style="display:none;">
@@ -64,8 +62,12 @@
         </div>
 
         <div class="btn-container">
-            <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인 (Enter)</button>
+            <div class="main-controls" id="main-controls">
+                <button class="btn-prev" id="btn-prev-ui" onclick="prevQuestion()" title="이전 문제">←</button>
+                <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인</button>
+            </div>
             <button class="btn-next" id="btn-next" onclick="nextQuestion()" style="display:none;">다음 문제 (Enter)</button>
+            
             <div id="star-controls" style="display:none; display:flex; gap:10px;">
                 <button class="btn-add-star" id="btn-add" style="flex:1" onclick="updateStar('add')">별 추가</button>
                 <button class="btn-remove-star" id="btn-remove" style="flex:1" onclick="updateStar('remove')">별 없애기</button>
@@ -75,7 +77,6 @@
 </div>
 
 <script>
-    // ⚠️ 본인의 Apps Script URL을 아래에 넣으세요
     const API_URL = 'https://script.google.com/macros/s/AKfycbyzBFZEpHR2d53J66w2X1Unuz09Xzf-P2iPlIP_7aazpCOkhduvQqLJSiUlSJNS0fg5/exec'; 
 
     let allData = [];
@@ -91,29 +92,21 @@
                 kanji: cols[0], mean: cols[1], kun: cols[2]||"ー", on: cols[3]||"ー", stars: parseInt(cols[4])||0, words: cols[5]||"예시 없음"
             })).filter(i => i.kanji);
 
-            // 숫자 미리보기 업데이트
             const starCount = allData.filter(i => i.stars > 0).length;
-            document.getElementById('count-all').innerText = `(${allData.length}개)`;
-            document.getElementById('count-star').innerText = `(${starCount}개)`;
+            document.getElementById('count-all').innerText = `(${allData.length})`;
+            document.getElementById('count-star').innerText = `(${starCount})`;
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('mode-selection').style.display = 'flex';
         } catch (e) {
-            document.getElementById('loader').innerText = "❌ 데이터 로드 실패";
+            document.getElementById('loader').innerText = "❌ 연결 실패";
         }
     }
 
     function startStudy(mode) {
-        if (mode === 'star') {
-            studyData = allData.filter(i => i.stars > 0);
-            if (studyData.length === 0) {
-                alert("별이 달린 한자가 없습니다! 전체 모드로 시작합니다.");
-                studyData = [...allData];
-            }
-        } else {
-            studyData = [...allData];
-        }
-
+        studyData = (mode === 'star') ? allData.filter(i => i.stars > 0) : [...allData];
+        if (studyData.length === 0) { alert("데이터가 없습니다."); return; }
+        
         studyData.sort(() => Math.random() - 0.5);
         document.getElementById('mode-selection').style.display = 'none';
         document.getElementById('quiz-content').style.display = 'block';
@@ -131,42 +124,51 @@
         document.getElementById('words-display').innerText = "📖 " + item.words;
         
         document.getElementById('answer-area').style.display = 'none';
-        document.getElementById('btn-show').style.display = 'block';
+        document.getElementById('main-controls').style.display = 'flex';
         document.getElementById('btn-next').style.display = 'none';
         document.getElementById('star-controls').style.setProperty('display', 'none', 'important');
+        
+        // 첫 문제면 이전 버튼 비활성화
+        document.getElementById('btn-prev-ui').disabled = (currentIdx === 0);
         isShowingAnswer = false;
     }
 
     function showAnswer() {
         document.getElementById('answer-area').style.display = 'block';
-        document.getElementById('btn-show').style.display = 'none';
+        document.getElementById('main-controls').style.display = 'none';
         document.getElementById('btn-next').style.display = 'block';
         document.getElementById('star-controls').style.setProperty('display', 'flex', 'important');
         isShowingAnswer = true;
     }
 
+    function nextQuestion() {
+        if (currentIdx < studyData.length - 1) {
+            currentIdx++;
+            updateCard();
+        } else {
+            alert("학습이 완료되었습니다!");
+            location.reload();
+        }
+    }
+
+    function prevQuestion() {
+        if (currentIdx > 0) {
+            currentIdx--;
+            updateCard();
+        }
+    }
+
     async function updateStar(action) {
         const item = studyData[currentIdx];
-        const btnAdd = document.getElementById('btn-add');
-        const btnRem = document.getElementById('btn-remove');
-        btnAdd.disabled = btnRem.disabled = true;
+        const btns = [document.getElementById('btn-add'), document.getElementById('btn-remove')];
+        btns.forEach(b => b.disabled = true);
 
         try {
             await fetch(API_URL, { method: 'POST', body: JSON.stringify({ kanji: item.kanji, action: action }) });
             item.stars = (action === 'add') ? item.stars + 1 : Math.max(0, item.stars - 1);
             document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
         } catch (e) { alert("기록 실패"); }
-        btnAdd.disabled = btnRem.disabled = false;
-    }
-
-    function nextQuestion() {
-        currentIdx++;
-        if (currentIdx >= studyData.length) {
-            alert("학습 완료! 초기화면으로 돌아갑니다.");
-            location.reload();
-        } else {
-            updateCard();
-        }
+        btns.forEach(b => b.disabled = false);
     }
 
     function toggleLogic() {
@@ -176,6 +178,7 @@
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') toggleLogic();
+        if (e.key === 'ArrowLeft' && !isShowingAnswer) prevQuestion();
     });
 
     loadData();
