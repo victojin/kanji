@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일한암 스마트 학습기</title>
+    <title>암기박사 - 일본어 한자</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --info: #9b59b6; --bg: #f0f2f5; --gray: #95a5a6; }
+        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --info: #9b59b6; --recent: #34495e; --bg: #f0f2f5; --gray: #95a5a6; }
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; }
         
-        /* 홈 버튼 스타일 */
-        .home-btn { position: absolute; top: 20px; right: 20px; font-size: 20px; cursor: pointer; background: none; border: none; color: var(--gray); padding: 5px; transition: 0.2s; }
-        .home-btn:hover { color: var(--primary); }
+        /* 심플 홈 버튼 스타일 */
+        .home-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; background: none; border: none; padding: 5px; transition: 0.2s; display: flex; align-items: center; }
+        .home-btn svg { width: 24px; height: 24px; fill: var(--gray); }
+        .home-btn:hover svg { fill: var(--primary); }
 
         #mode-selection { display: flex; flex-direction: column; gap: 12px; }
         .mode-btn { padding: 18px; font-size: 17px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
+        .btn-quick { background: var(--info); }
+        .btn-recent { background: var(--recent); }
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
-        .btn-quick { background: var(--info); }
         .count-badge { font-size: 13px; font-weight: normal; opacity: 0.85; margin-left: 5px; }
         
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
@@ -47,14 +49,17 @@
     <div id="loader">데이터 동기화 중...</div>
 
     <div id="mode-selection" style="display:none;">
-        <h2 style="margin-bottom:20px;">일본어 한자 암기박사1</h2>
+        <h2 style="margin-bottom:20px;">학습 모드 선택</h2>
         <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 빠른 학습 (10문제)</button>
+        <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 학습 (마지막 40자)</button>
         <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 <span class="count-badge" id="count-all"></span></button>
         <button class="mode-btn btn-star-only" onclick="startStudy('star')">헷갈린 한자 <span class="count-badge" id="count-star"></span></button>
     </div>
 
     <div id="quiz-content" style="display:none;">
-        <button class="home-btn" onclick="goHome()" title="처음으로">🏠</button>
+        <button class="home-btn" onclick="goHome()" title="처음으로">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
         <div class="progress" id="progress-text">0 / 0</div>
         <div class="star-display" id="star-display"></div>
         <div class="kanji-box" id="kanji-display" lang="ja" onclick="toggleLogic()"></div>
@@ -95,6 +100,7 @@
         try {
             const response = await fetch(API_URL);
             const data = await response.json();
+            // 시트의 원본 순서 유지 (slice(1)은 헤더 제외)
             allData = data.slice(1).map(cols => ({
                 kanji: cols[0], mean: cols[1], kun: cols[2]||"ー", on: cols[3]||"ー", stars: parseInt(cols[4])||0, words: cols[5]||"예시 없음"
             })).filter(i => i.kanji);
@@ -106,20 +112,23 @@
             document.getElementById('loader').style.display = 'none';
             document.getElementById('mode-selection').style.display = 'flex';
         } catch (e) {
-            document.getElementById('loader').innerText = "❌ 연결 실패";
+            document.getElementById('loader').innerText = "❌ 데이터 로드 실패";
         }
     }
 
     function startStudy(mode) {
         if (mode === 'quick') {
             studyData = [...allData].sort(() => Math.random() - 0.5).slice(0, 10);
+        } else if (mode === 'recent') {
+            // 시트 하단 40개 추출 후 랜덤 섞기
+            studyData = allData.slice(-40).sort(() => Math.random() - 0.5);
         } else if (mode === 'star') {
             studyData = allData.filter(i => i.stars > 0).sort(() => Math.random() - 0.5);
         } else {
             studyData = [...allData].sort(() => Math.random() - 0.5);
         }
 
-        if (studyData.length === 0) { alert("학습할 한자가 없습니다."); return; }
+        if (studyData.length === 0) { alert("학습할 데이터가 없습니다."); return; }
         
         currentIdx = 0;
         document.getElementById('mode-selection').style.display = 'none';
@@ -127,11 +136,8 @@
         updateCard();
     }
 
-    // 홈 화면으로 돌아가는 함수
     function goHome() {
-        if (confirm("학습을 중단하고 시작 화면으로 돌아갈까요?")) {
-            location.reload();
-        }
+        if (confirm("학습을 중단하고 돌아갈까요?")) location.reload();
     }
 
     function updateCard() {
@@ -148,7 +154,6 @@
         document.getElementById('main-controls').style.display = 'flex';
         document.getElementById('btn-next').style.display = 'none';
         document.getElementById('star-controls').style.setProperty('display', 'none', 'important');
-        
         document.getElementById('btn-prev-ui').disabled = (currentIdx === 0);
         isShowingAnswer = false;
     }
@@ -166,8 +171,8 @@
             currentIdx++;
             updateCard();
         } else {
-            alert("🎉 모든 학습이 완료되었습니다! 시작 화면으로 돌아갑니다.");
-            location.reload(); // 새로고침하여 홈으로 복귀
+            alert("🎉 학습 완료!");
+            location.reload();
         }
     }
 
@@ -182,12 +187,11 @@
         const item = studyData[currentIdx];
         const btns = [document.getElementById('btn-add'), document.getElementById('btn-remove')];
         btns.forEach(b => b.disabled = true);
-
         try {
             await fetch(API_URL, { method: 'POST', body: JSON.stringify({ kanji: item.kanji, action: action }) });
             item.stars = (action === 'add') ? item.stars + 1 : Math.max(0, item.stars - 1);
             document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
-        } catch (e) { alert("기록 실패"); }
+        } catch (e) { alert("업데이트 실패"); }
         btns.forEach(b => b.disabled = false);
     }
 
