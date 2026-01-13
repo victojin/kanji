@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2685.3">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="ko"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;일한암1 - 실시간 암기 테스트&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>:root { --primary: #4a90e2; --success: #2ecc71; --bg: #f0f2f5; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.progress { font-size: 14px; color: #888; margin-bottom: 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.kanji-box { font-size: 100px; margin: 20px 0; color: #333; font-weight: bold; cursor: pointer; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.mean { font-size: 26px; font-weight: bold; color: #e74c3c; text-align: center; margin-bottom: 15px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.readings { font-size: 18px; color: #444; background: #f9f9f9; padding: 15px; border-radius: 12px; line-height: 1.8; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.words { font-size: 15px; color: #666; margin-top: 15px; padding: 10px; border-left: 4px solid var(--primary); background: #f1f7ff; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn-container { margin-top: 25px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>button { padding: 16px; font-size: 18px; cursor: pointer; border: none; border-radius: 14px; width: 100%; font-weight: bold; transition: 0.2s; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn-show { background-color: var(--primary); color: white; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn-next { background-color: var(--success); color: white; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#status { color: #888; margin-top: 10px; font-size: 14px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div class="card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="loader"&gt;데이터를 불러오는 중...&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="quiz-content" style="display:none;"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="progress" id="progress"&gt;0 / 0&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="kanji-box" id="kanji-display" onclick="showAnswer()"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="answer-area" id="answer-area"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="mean" id="mean-display"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="readings"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;strong&gt;훈독:&lt;/strong&gt; &lt;span id="kun-display"&gt;&lt;/span&gt;&lt;br&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;strong&gt;음독:&lt;/strong&gt; &lt;span id="on-display"&gt;&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div class="words" id="words-display"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="btn-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn-show" id="btn-show" onclick="showAnswer()"&gt;정답 확인&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn-next" id="btn-next" onclick="nextQuestion()" style="display:none;"&gt;다음 문제&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="status"&gt;&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTCV0avG8jn-DpN-L1O1G-WdZxRDVhZ6SRkqSJ2TeZxKVRlmtvo1ysoNpROE6oVNyWUyOsxtYQFkl0P/pub?gid=0&amp;single=true&amp;output=csv';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>let kanjiData = [];</p>
+<p class="p1"><span class="Apple-converted-space">    </span>let currentIdx = 0;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>async function loadData() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const status = document.getElementById('status');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const response = await fetch(CSV_URL);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (!response.ok) throw new Error('데이터 응답 없음');</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const text = await response.text();</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// CSV 파싱 로직 개선</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const rows = text.split('\n').slice(1); // 헤더 제외</p>
+<p class="p1"><span class="Apple-converted-space">            </span>kanjiData = rows.map(row =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>// 따옴표 안의 쉼표를 무시하고 분리</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c =&gt; c.replace(/^"|"$/g, '').trim());</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (cols.length &lt; 4) return null;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>return {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>kanji: cols[0],</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>mean: cols[1],</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>kun: cols[2] || "ー",</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>on: cols[3] || "ー",</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>words: cols[5] || "예시 없음" // 4번 인덱스(숫자)를 건너뛰고 5번 단어 가져옴</p>
+<p class="p1"><span class="Apple-converted-space">                </span>};</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}).filter(item =&gt; item &amp;&amp; item.kanji);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (kanjiData.length &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>kanjiData.sort(() =&gt; Math.random() - 0.5);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('loader').style.display = 'none';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>document.getElementById('quiz-content').style.display = 'block';</p>
+<p class="p1"><span class="Apple-converted-space">                </span>updateCard();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} catch (e) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>status.innerHTML = "❌ 데이터를 불러올 수 없습니다.&lt;br&gt;1. 파일을 서버(Live Server 등)에서 실행 중인지 확인하세요.&lt;br&gt;2. 인터넷 연결을 확인하세요.";</p>
+<p class="p1"><span class="Apple-converted-space">            </span>console.error(e);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function updateCard() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const item = kanjiData[currentIdx];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('progress').innerText = `${currentIdx + 1} / ${kanjiData.length}`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('kanji-display').innerText = item.kanji;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('mean-display').innerText = item.mean;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('kun-display').innerText = item.kun;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('on-display').innerText = item.on;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('words-display').innerText = "📖 " + item.words;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('answer-area').style.display = 'none';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('btn-show').style.display = 'block';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('btn-next').style.display = 'none';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function showAnswer() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('answer-area').style.display = 'block';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('btn-show').style.display = 'none';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('btn-next').style.display = 'block';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function nextQuestion() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>currentIdx = (currentIdx + 1) % kanjiData.length;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>updateCard();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>loadData();</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
