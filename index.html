@@ -10,6 +10,9 @@
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; min-height: 450px; }
         
+        /* 출석 뱃지 */
+        .streak-badge { position: absolute; top: 20px; left: 20px; background: #fff5f5; color: #ff4757; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #ffccd2; display: none; }
+        
         .home-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; background: none; border: none; padding: 5px; display: flex; align-items: center; }
         .home-btn svg { width: 24px; height: 24px; fill: var(--gray); }
         .home-btn:hover svg { fill: var(--primary); }
@@ -24,6 +27,7 @@
         .btn-list { background: white; color: var(--gray); border: 2px solid #eee; margin-top: 5px; }
         .count-badge { font-size: 12px; font-weight: normal; opacity: 0.85; margin-left: 5px; }
         
+        /* 목록 모달 */
         #list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 90%; max-width: 450px; height: 80vh; border-radius: 24px; padding: 20px; overflow-y: auto; position: relative; }
         .modal-header { position: sticky; top: -20px; background: white; padding: 10px 0; border-bottom: 2px solid #eee; margin-bottom: 10px; z-index: 10; font-weight: bold; font-size: 18px; }
@@ -38,6 +42,7 @@
         .star-display { height: 24px; color: #f1c40f; font-size: 20px; margin-bottom: 5px; }
         .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; font-family: 'Noto Sans JP', sans-serif; }
         
+        /* 퀴즈 선택지 */
         .quiz-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .choice-btn { padding: 15px; font-size: 16px; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; cursor: pointer; transition: 0.1s; text-align: left; display: flex; align-items: center; }
         .choice-num { background: #ddd; color: #555; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
@@ -63,10 +68,11 @@
 <body>
 
 <div class="card">
+    <div id="streak-badge" class="streak-badge">🔥 연속 1일</div>
     <div id="loader">데이터 동기화 중...</div>
 
     <div id="mode-selection" style="display:none;">
-        <h2 style="margin-bottom:15px;">암기박사 모드</h2>
+        <h2 style="margin-top:20px; margin-bottom:15px;">일본어 한자 암기박사</h2>
         <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 빠른 학습 (10문제)</button>
         <button class="mode-btn btn-quiz" onclick="startQuiz()">📝 객관식 퀴즈 (10문제)</button>
         <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 학습</button>
@@ -99,7 +105,7 @@
                 <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인 (Enter)</button>
             </div>
             <div id="after-answer-controls" style="display:none; flex-direction:column; gap:10px;">
-                <button class="btn-next" onclick="nextQuestion()">다음 문제 (Enter)</button>
+                <button class="btn-next" onclick="nextQuestion()" style="background:var(--success); color:white;">다음 문제 (Enter)</button>
                 <div style="display:flex; gap:10px;">
                     <button class="mode-btn btn-all" style="flex:1; background:var(--warning);" onclick="updateStar('add')">별 +</button>
                     <button class="mode-btn btn-all" style="flex:1; background:var(--gray);" onclick="updateStar('remove')">별 -</button>
@@ -108,7 +114,7 @@
         </div>
 
         <div id="quiz-controls" style="display:none; margin-top: 20px;">
-            <button class="btn-next" onclick="moveToNextQuiz()">다음 문제 (Enter) →</button>
+            <button class="btn-next" onclick="moveToNextQuiz()" style="background:var(--success); color:white; width:100%;">다음 문제 (Enter) →</button>
         </div>
     </div>
 </div>
@@ -122,10 +128,36 @@
 </div>
 
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbyzBFZEpHR2d53J66w2X1Unuz09Xzf-P2iPlIP_7aazpCOkhduvQqLJSiUlSJNS0fg5/exec'; 
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzhVyP7OIIGby8FL3iQgG9XFNnu9VWzdUdIgU0ymtZXsXm7kHDHtD63BlZcKyZ2f8y-/exec'; 
     let allData = [], studyData = [], currentIdx = 0, score = 0, isQuizMode = false, isAnswerVisible = false, isSelectionMade = false;
 
+    // 출석 체크 로직
+    async function checkAttendance() {
+        const today = new Date().toISOString().split('T')[0];
+        const lastDate = localStorage.getItem('last_attendance');
+        let streak = parseInt(localStorage.getItem('streak_count')) || 0;
+
+        if (lastDate !== today) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            if (lastDate === yesterdayStr) streak++;
+            else streak = 1;
+
+            localStorage.setItem('last_attendance', today);
+            localStorage.setItem('streak_count', streak);
+            
+            fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'attendance', date: today, streak: streak }) });
+        }
+
+        const badge = document.getElementById('streak-badge');
+        badge.innerText = `🔥 연속 ${streak}일`;
+        badge.style.display = 'block';
+    }
+
     async function loadData() {
+        checkAttendance();
         try {
             const r = await fetch(API_URL);
             const data = await r.json();
@@ -139,21 +171,16 @@
         } catch (e) { document.getElementById('loader').innerText = "❌ 로드 실패"; }
     }
 
-    // 키보드 이벤트 리스너 추가
+    // 키보드 이벤트
     window.addEventListener('keydown', (e) => {
         if (document.getElementById('quiz-content').style.display === 'none') return;
-
         if (isQuizMode) {
-            // 퀴즈 모드: 1-4번 키로 선택
             if (!isSelectionMade && e.key >= '1' && e.key <= '4') {
                 const btns = document.querySelectorAll('.choice-btn');
                 const targetIdx = parseInt(e.key) - 1;
                 if (btns[targetIdx]) btns[targetIdx].click();
-            } else if (isSelectionMade && e.key === 'Enter') {
-                moveToNextQuiz();
-            }
+            } else if (isSelectionMade && e.key === 'Enter') { moveToNextQuiz(); }
         } else {
-            // 일반 학습 모드: Enter로 정답 확인 및 다음 이동
             if (e.key === 'Enter') {
                 if (!isAnswerVisible) showAnswer();
                 else nextQuestion();
@@ -201,6 +228,7 @@
         currentIdx = 0;
         document.getElementById('mode-selection').style.display = 'none';
         document.getElementById('quiz-content').style.display = 'block';
+        document.getElementById('streak-badge').style.display = 'none';
         updateCard();
     }
 
