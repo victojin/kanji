@@ -17,27 +17,34 @@
         #mode-selection { display: flex; flex-direction: column; gap: 10px; }
         .mode-btn { padding: 15px; font-size: 16px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
         .btn-quick { background: var(--info); }
-        .btn-recent { background: var(--recent); }
         .btn-quiz { background: var(--quiz); }
+        .btn-recent { background: var(--recent); }
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
+        .btn-list { background: white; color: var(--gray); border: 2px solid #eee; margin-top: 5px; }
         .count-badge { font-size: 12px; font-weight: normal; opacity: 0.85; margin-left: 5px; }
         
+        /* 한자 목록 모달 스타일 */
+        #list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 90%; max-width: 450px; height: 80vh; border-radius: 24px; padding: 20px; overflow-y: auto; position: relative; }
+        .modal-header { position: sticky; top: -20px; background: white; padding: 10px 0; border-bottom: 2px solid #eee; margin-bottom: 10px; z-index: 10; font-weight: bold; font-size: 18px; }
+        .kanji-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: left; }
+        .list-kanji { font-family: 'Noto Sans JP', sans-serif; font-size: 28px; font-weight: bold; width: 50px; color: var(--primary); }
+        .list-info { flex: 1; padding-left: 10px; }
+        .list-mean { font-weight: bold; font-size: 16px; }
+        .list-reading { font-size: 13px; color: #666; }
+        .list-star { color: var(--warning); font-size: 12px; }
+
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
-        .star-display { color: #f1c40f; font-size: 20px; height: 24px; margin-bottom: 5px; }
         .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; }
-        
-        /* 객관식 퀴즈 스타일 */
         .quiz-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .choice-btn { padding: 15px; font-size: 16px; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; cursor: pointer; transition: 0.2s; text-align: left; }
         .choice-btn:hover { border-color: var(--primary); background: #eef5ff; }
         .choice-btn.correct { background: var(--success); color: white; border-color: var(--success); }
         .choice-btn.wrong { background: var(--danger); color: white; border-color: var(--danger); }
-
         .answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
         .mean { font-size: 26px; font-weight: bold; color: var(--danger); text-align: center; margin-bottom: 15px; }
         .readings { font-size: 18px; color: #444; background: #f9f9f9; padding: 15px; border-radius: 12px; line-height: 1.8; }
-        
         .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
         .main-controls { display: flex; gap: 10px; }
         button { padding: 16px; font-size: 16px; cursor: pointer; border: none; border-radius: 14px; font-weight: bold; transition: 0.2s; }
@@ -58,6 +65,7 @@
         <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 학습</button>
         <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 <span class="count-badge" id="count-all"></span></button>
         <button class="mode-btn btn-star-only" onclick="startStudy('star')">헷갈린 한자 <span class="count-badge" id="count-star"></span></button>
+        <button class="mode-btn btn-list" onclick="toggleList(true)">📋 전체 한자 목록 보기</button>
     </div>
 
     <div id="quiz-content" style="display:none;">
@@ -65,11 +73,9 @@
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         </button>
         <div class="progress" id="progress-text">0 / 0</div>
-        <div class="star-display" id="star-display"></div>
+        <div class="star-display" id="star-display" style="height:24px; color:#f1c40f; font-size:20px; margin-bottom:5px;"></div>
         <div class="kanji-box" id="kanji-display" lang="ja"></div>
-        
         <div id="choice-area" class="quiz-container" style="display:none;"></div>
-
         <div class="answer-area" id="answer-area">
             <div class="mean" id="mean-display"></div>
             <div class="readings">
@@ -77,7 +83,6 @@
                 <strong>음독:</strong> <span id="on-display"></span>
             </div>
         </div>
-
         <div class="btn-container" id="study-controls">
             <div class="main-controls" id="main-controls">
                 <button class="btn-prev" id="btn-prev-ui" onclick="prevQuestion()">←</button>
@@ -85,6 +90,14 @@
             </div>
             <button class="btn-next" id="btn-next" onclick="nextQuestion()" style="display:none;">다음 문제 (Enter)</button>
         </div>
+    </div>
+</div>
+
+<div id="list-modal" onclick="toggleList(false)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">시트 내 한자 목록</div>
+        <div id="kanji-list-body"></div>
+        <button class="mode-btn btn-all" style="width:100%; margin-top:15px;" onclick="toggleList(false)">닫기</button>
     </div>
 </div>
 
@@ -103,7 +116,26 @@
             document.getElementById('count-star').innerText = `(${allData.filter(i=>i.stars>0).length})`;
             document.getElementById('loader').style.display = 'none';
             document.getElementById('mode-selection').style.display = 'flex';
+            renderList();
         } catch (e) { document.getElementById('loader').innerText = "❌ 로드 실패"; }
+    }
+
+    function toggleList(show) {
+        document.getElementById('list-modal').style.display = show ? 'flex' : 'none';
+    }
+
+    function renderList() {
+        const body = document.getElementById('kanji-list-body');
+        body.innerHTML = allData.map(i => `
+            <div class="kanji-item">
+                <div class="list-kanji" lang="ja">${i.kanji}</div>
+                <div class="list-info">
+                    <div class="list-mean">${i.mean}</div>
+                    <div class="list-reading">훈: ${i.kun} | 음: ${i.on}</div>
+                    <div class="list-star">${'★'.repeat(Math.min(i.stars, 5))}</div>
+                </div>
+            </div>
+        `).join('');
     }
 
     function startStudy(mode) {
@@ -112,13 +144,11 @@
         else if (mode === 'recent') studyData = allData.slice(-40).sort(()=>Math.random()-0.5);
         else if (mode === 'star') studyData = allData.filter(i=>i.stars>0).sort(()=>Math.random()-0.5);
         else studyData = [...allData].sort(()=>Math.random()-0.5);
-        
         initView();
     }
 
     function startQuiz() {
-        isQuizMode = true;
-        score = 0;
+        isQuizMode = true; score = 0;
         studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
         initView();
     }
@@ -157,10 +187,8 @@
     function makeChoices(correctItem) {
         const area = document.getElementById('choice-area');
         area.innerHTML = '';
-        // 오답 3개 무작위 추출
         let wrongs = allData.filter(i => i.kanji !== correctItem.kanji).sort(()=>Math.random()-0.5).slice(0, 3);
         let choices = [...wrongs, correctItem].sort(()=>Math.random()-0.5);
-
         choices.forEach(choice => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
@@ -173,9 +201,7 @@
     function checkAnswer(btn, isCorrect) {
         const btns = document.querySelectorAll('.choice-btn');
         btns.forEach(b => b.disabled = true);
-        if (isCorrect) { btn.classList.add('correct'); score++; }
-        else { btn.classList.add('wrong'); }
-        
+        if (isCorrect) { btn.classList.add('correct'); score++; } else { btn.classList.add('wrong'); }
         setTimeout(() => {
             if (currentIdx < studyData.length - 1) { currentIdx++; updateCard(); }
             else { alert(`퀴즈 완료! 점수: ${score} / 10`); location.reload(); }
@@ -194,7 +220,6 @@
     }
 
     function prevQuestion() { if (currentIdx > 0) { currentIdx--; updateCard(); } }
-
     function goHome() { if (confirm("시작 화면으로 돌아갈까요?")) location.reload(); }
 
     loadData();
