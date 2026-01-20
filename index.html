@@ -10,7 +10,7 @@
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; min-height: 450px; }
         
-        /* 출석 뱃지 스타일 */
+        /* 출석 뱃지 */
         .streak-badge { position: absolute; top: 20px; left: 20px; background: #fff5f5; color: #ff4757; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #ffccd2; display: none; z-index: 5; }
         
         .home-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; background: none; border: none; padding: 5px; display: flex; align-items: center; }
@@ -42,7 +42,6 @@
         .star-display { height: 24px; color: #f1c40f; font-size: 20px; margin-bottom: 5px; }
         .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; font-family: 'Noto Sans JP', sans-serif; }
         
-        /* 퀴즈 선택지 */
         .quiz-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .choice-btn { padding: 15px; font-size: 16px; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; cursor: pointer; transition: 0.1s; text-align: left; display: flex; align-items: center; }
         .choice-num { background: #ddd; color: #555; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
@@ -127,10 +126,9 @@
 </div>
 
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzhVyP7OIIGby8FL3iQgG9XFNnu9VWzdUdIgU0ymtZXsXm7kHDHtD63BlZcKyZ2f8y-/exec'; 
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyjZEkhBLGgPUM8kgK0DgMuHjdnIqH7glwB6trxhyvW6_qVWbfobFHBP2TCwW1qh0EX/exec'; 
     let allData = [], studyData = [], currentIdx = 0, score = 0, isQuizMode = false, isAnswerVisible = false, isSelectionMade = false;
 
-    // 🚀 [동기화 개선] 출석 체크 로직
     async function checkAttendance() {
         const today = new Date().toISOString().split('T')[0];
         const lastDate = localStorage.getItem('last_attendance');
@@ -155,7 +153,6 @@
         }
     }
 
-    // 🚀 [성능 개선] 데이터 로딩 + 기기 간 동기화
     async function loadData() {
         checkAttendance(); 
 
@@ -165,13 +162,11 @@
             
             const resData = await response.json();
             
-            // 시트 데이터 가공 (배열 혹은 {kanji, streak} 구조 대응)
             const rawKanji = Array.isArray(resData) ? resData : resData.kanji;
             allData = rawKanji.slice(1).map(c => ({
                 kanji: c[0], mean: c[1], kun: c[2]||"ー", on: c[3]||"ー", stars: parseInt(c[4])||0
             })).filter(i => i.kanji);
 
-            // 🔥 서버에서 받아온 Streak 숫자 표시 (기기 상관없이 동기화)
             const serverStreak = resData.streak || localStorage.getItem('streak_count') || 1;
             const badge = document.getElementById('streak-badge');
             badge.innerText = `🔥 연속 ${serverStreak}일`;
@@ -184,11 +179,10 @@
             document.getElementById('mode-selection').style.display = 'flex';
         } catch (e) { 
             console.error('Loading Error:', e);
-            document.getElementById('loader').innerText = "❌ 로드 실패 (재배포 확인 필요)"; 
+            document.getElementById('loader').innerText = "❌ 로드 실패 (새 URL 배포 상태 확인)"; 
         }
     }
 
-    // 키보드 조작
     window.addEventListener('keydown', (e) => {
         if (document.getElementById('quiz-content').style.display === 'none') return;
         if (isQuizMode) {
