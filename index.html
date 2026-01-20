@@ -154,34 +154,49 @@
     }
 
     async function loadData() {
-        checkAttendance(); 
+    try {
+        const response = await fetch(API_URL);
+        const resData = await response.json();
+        
+        // 1. 한자 데이터 로드
+        const rawKanji = resData.kanji;
+        allData = rawKanji.slice(1).map(c => ({
+            kanji: c[0], mean: c[1], kun: c[2]||"ー", on: c[3]||"ー", stars: parseInt(c[4])||0
+        })).filter(i => i.kanji);
 
-        try {
-            const response = await fetch(API_URL);
-            if (!response.ok) throw new Error('Network fail');
+        // 2. 출석 동기화 (핵심 로직)
+        const badge = document.getElementById('streak-badge');
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (resData.isTodayRecorded) {
+            // 서버에 이미 오늘 기록이 있다면: 브라우저 저장소 업데이트만 하고 종료
+            localStorage.setItem('last_attendance', today);
+            badge.innerText = `🔥 연속 ${resData.streak}일`;
+        } else {
+            // 서버에 오늘 기록이 없다면: 새로운 날이므로 +1 해서 기록
+            let newStreak = (resData.streak || 0) + 1;
             
-            const resData = await response.json();
-            
-            const rawKanji = Array.isArray(resData) ? resData : resData.kanji;
-            allData = rawKanji.slice(1).map(c => ({
-                kanji: c[0], mean: c[1], kun: c[2]||"ー", on: c[3]||"ー", stars: parseInt(c[4])||0
-            })).filter(i => i.kanji);
+            // 중복 전송 방지를 위해 즉시 로컬 저장소 기록
+            localStorage.setItem('last_attendance', today);
+            badge.innerText = `🔥 연속 ${newStreak}일`;
 
-            const serverStreak = resData.streak || localStorage.getItem('streak_count') || 1;
-            const badge = document.getElementById('streak-badge');
-            badge.innerText = `🔥 연속 ${serverStreak}일`;
-            badge.style.display = 'block';
-
-            updateHomeCounts();
-            renderList();
-            
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('mode-selection').style.display = 'flex';
-        } catch (e) { 
-            console.error('Loading Error:', e);
-            document.getElementById('loader').innerText = "❌ 로드 실패 (새 URL 배포 상태 확인)"; 
+            // 서버에 딱 한 번만 전송
+            fetch(API_URL, { 
+                method: 'POST', 
+                mode: 'no-cors',
+                body: JSON.stringify({ action: 'attendance', date: today, streak: newStreak }) 
+            });
         }
+        
+        badge.style.display = 'block';
+        updateHomeCounts();
+        renderList();
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('mode-selection').style.display = 'flex';
+    } catch (e) {
+        console.error(e);
     }
+}
 
     window.addEventListener('keydown', (e) => {
         if (document.getElementById('quiz-content').style.display === 'none') return;
