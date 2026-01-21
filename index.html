@@ -27,7 +27,7 @@
         .btn-list { background: white; color: var(--gray); border: 2px solid #eee; margin-top: 5px; }
         .count-badge { font-size: 12px; font-weight: normal; opacity: 0.85; margin-left: 5px; }
         
-        /* 모달 스타일 */
+        /* 목록 모달 */
         #list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 90%; max-width: 450px; height: 80vh; border-radius: 24px; padding: 20px; overflow-y: auto; position: relative; }
         .modal-header { position: sticky; top: -20px; background: white; padding: 10px 0; border-bottom: 2px solid #eee; margin-bottom: 10px; z-index: 10; font-weight: bold; font-size: 18px; }
@@ -36,7 +36,6 @@
         .list-info { flex: 1; padding-left: 10px; }
         .list-mean { font-weight: bold; font-size: 16px; }
         .list-reading { font-size: 13px; color: #666; }
-        .list-star { color: var(--warning); font-size: 12px; }
 
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
         .star-display { height: 24px; color: #f1c40f; font-size: 20px; margin-bottom: 5px; }
@@ -126,10 +125,11 @@
 </div>
 
 <script>
+    // ⚠️ 위에서 생성한 앱스 스크립트 배포 URL로 바꿔주세요.
     const API_URL = 'https://script.google.com/macros/s/AKfycbzEIxqA9zMi4bGMC8nxoXdbFgoGxLv0UFA5H5YjgtS8hSYmi5fo1RVpy2YrBf1cmxTw/exec'; 
     let allData = [], studyData = [], currentIdx = 0, score = 0, isQuizMode = false, isAnswerVisible = false, isSelectionMade = false;
 
-    // 🚀 [중복 방지 최적화] 데이터 로드 및 출석 체크 통합 실행
+    // 🚀 데이터 로드 (서버가 출석을 직접 처리하므로 HTML은 결과만 받음)
     async function loadData() {
         try {
             const response = await fetch(API_URL);
@@ -137,35 +137,17 @@
             
             const resData = await response.json();
             
-            // 1. 한자 데이터 가공
+            // 1. 데이터 가공
             const rawKanji = Array.isArray(resData) ? resData : resData.kanji;
             allData = rawKanji.slice(1).map(c => ({
                 kanji: c[0], mean: c[1], kun: c[2]||"ー", on: c[3]||"ー", stars: parseInt(c[4])||0
             })).filter(i => i.kanji);
 
-            // 2. 출석 동기화 (서버 기록 우선)
+            // 2. 출석 일수 표시 (서버가 오늘 기록 여부를 확인해 계산해 준 숫자)
             const badge = document.getElementById('streak-badge');
-            const today = new Date().toISOString().split('T')[0];
-            
-            if (resData.isTodayRecorded) {
-                // 이미 서버에 오늘 기록이 있으면 숫자만 표시
-                localStorage.setItem('last_attendance', today);
-                badge.innerText = `🔥 연속 ${resData.streak}일`;
-            } else {
-                // 서버에 오늘 기록이 없으면 +1 해서 기록 요청
-                let newStreak = (resData.streak || 0) + 1;
-                localStorage.setItem('last_attendance', today);
-                badge.innerText = `🔥 연속 ${newStreak}일`;
-
-                // 서버에 POST 전송 (딱 한 번)
-                fetch(API_URL, { 
-                    method: 'POST', 
-                    mode: 'no-cors',
-                    body: JSON.stringify({ action: 'attendance', date: today, streak: newStreak }) 
-                });
-            }
-
+            badge.innerText = `🔥 연속 ${resData.streak || 0}일`;
             badge.style.display = 'block';
+
             updateHomeCounts();
             renderList();
             
@@ -173,11 +155,11 @@
             document.getElementById('mode-selection').style.display = 'flex';
         } catch (e) { 
             console.error('Loading Error:', e);
-            document.getElementById('loader').innerText = "❌ 로드 실패 (새로고침 해주세요)"; 
+            document.getElementById('loader').innerText = "❌ 데이터 로드 실패"; 
         }
     }
 
-    // 키보드 이벤트
+    // 키보드 조작
     window.addEventListener('keydown', (e) => {
         if (document.getElementById('quiz-content').style.display === 'none') return;
         if (isQuizMode) {
@@ -209,7 +191,6 @@
                 <div class="list-info">
                     <div class="list-mean">${i.mean}</div>
                     <div class="list-reading">훈: ${i.kun} | 음: ${i.on}</div>
-                    <div class="list-star">${'★'.repeat(Math.min(i.stars, 5))}</div>
                 </div>
             </div>
         `).join('');
