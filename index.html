@@ -10,9 +10,6 @@
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; min-height: 450px; }
         
-        /* 출석 뱃지 */
-        .streak-badge { position: absolute; top: 20px; left: 20px; background: #fff5f5; color: #ff4757; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #ffccd2; display: none; z-index: 5; }
-        
         .home-btn { position: absolute; top: 20px; right: 20px; cursor: pointer; background: none; border: none; padding: 5px; display: flex; align-items: center; }
         .home-btn svg { width: 24px; height: 24px; fill: var(--gray); }
         .home-btn:hover svg { fill: var(--primary); }
@@ -24,25 +21,13 @@
         .btn-recent { background: var(--recent); }
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
-        .btn-list { background: white; color: var(--gray); border: 2px solid #eee; margin-top: 5px; }
-        .count-badge { font-size: 12px; font-weight: normal; opacity: 0.85; margin-left: 5px; }
         
-        /* 목록 모달 */
-        #list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: white; width: 90%; max-width: 450px; height: 80vh; border-radius: 24px; padding: 20px; overflow-y: auto; position: relative; }
-        .modal-header { position: sticky; top: -20px; background: white; padding: 10px 0; border-bottom: 2px solid #eee; margin-bottom: 10px; z-index: 10; font-weight: bold; font-size: 18px; }
-        .kanji-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #f0f0f0; text-align: left; }
-        .list-kanji { font-family: 'Noto Sans JP', sans-serif; font-size: 28px; font-weight: bold; width: 50px; color: var(--primary); }
-        .list-info { flex: 1; padding-left: 10px; }
-        .list-mean { font-weight: bold; font-size: 16px; }
-        .list-reading { font-size: 13px; color: #666; }
-
         .progress { font-size: 14px; color: #888; margin-bottom: 10px; font-weight: bold; }
         .star-display { height: 24px; color: #f1c40f; font-size: 20px; margin-bottom: 5px; }
         .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; font-family: 'Noto Sans JP', sans-serif; }
         
         .quiz-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .choice-btn { padding: 15px; font-size: 16px; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; cursor: pointer; transition: 0.1s; text-align: left; display: flex; align-items: center; }
+        .choice-btn { padding: 15px; font-size: 16px; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; cursor: pointer; text-align: left; display: flex; align-items: center; }
         .choice-num { background: #ddd; color: #555; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
         .choice-btn.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
         .choice-btn.wrong { background: var(--danger) !important; color: white !important; border-color: var(--danger) !important; }
@@ -57,29 +42,26 @@
         .btn-show { background: var(--primary); color: white; flex: 3; }
         .btn-prev { background: var(--gray); color: white; flex: 1; }
         .btn-next { background: var(--success); color: white; width: 100%; }
-        
-        .star-pop { animation: pop 0.3s ease; }
-        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+        #loader { font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div id="streak-badge" class="streak-badge">🔥 연속 0일</div>
-    <div id="loader">데이터 동기화 중...</div>
+    <div id="loader">한자 데이터를 가져오고 있습니다...</div>
 
     <div id="mode-selection" style="display:none;">
-        <h2 style="margin-top:20px; margin-bottom:15px;">암기박사 모드</h2>
-        <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 빠른 학습 (10문제)</button>
-        <button class="mode-btn btn-quiz" onclick="startQuiz()">📝 객관식 퀴즈 (10문제)</button>
-        <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 학습</button>
-        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 <span class="count-badge" id="count-all"></span></button>
-        <button class="mode-btn btn-star-only" onclick="startStudy('star')">헷갈린 한자 <span class="count-badge" id="count-star"></span></button>
-        <button class="mode-btn btn-list" onclick="toggleList(true)">📋 전체 한자 목록 보기</button>
+        <h2 style="margin-top:20px; margin-bottom:15px;">일본어 한자 학습</h2>
+        <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 랜덤 10문제</button>
+        <button class="mode-btn btn-quiz" onclick="startQuiz()">📝 객관식 퀴즈</button>
+        <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가된 한자</button>
+        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 학습 시작</button>
+        <button class="mode-btn btn-star-only" onclick="startStudy('star')">⭐ 별표 표시된 한자</button>
     </div>
 
     <div id="quiz-content" style="display:none;">
-        <button class="home-btn" onclick="goHome()">
+        <button class="home-btn" onclick="location.reload()">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
         </button>
         <div class="progress" id="progress-text">0 / 0</div>
@@ -111,89 +93,32 @@
         </div>
 
         <div id="quiz-controls" style="display:none; margin-top: 20px;">
-            <button class="btn-next" onclick="moveToNextQuiz()" style="background:var(--success); color:white; width:100%;">다음 문제 (Enter) →</button>
+            <button class="btn-next" onclick="moveToNextQuiz()" style="background:var(--success); color:white; width:100%;">다음 문제 (Enter)</button>
         </div>
     </div>
 </div>
 
-<div id="list-modal" onclick="toggleList(false)">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">시트 내 한자 목록</div>
-        <div id="kanji-list-body"></div>
-        <button class="mode-btn btn-all" style="width:100%; margin-top:15px;" onclick="toggleList(false)">닫기</button>
-    </div>
-</div>
-
 <script>
-    // ⚠️ 위에서 생성한 앱스 스크립트 배포 URL로 바꿔주세요.
+    // ✅ 전달해주신 앱스 스크립트 URL 반영됨
     const API_URL = 'https://script.google.com/macros/s/AKfycbzEIxqA9zMi4bGMC8nxoXdbFgoGxLv0UFA5H5YjgtS8hSYmi5fo1RVpy2YrBf1cmxTw/exec'; 
     let allData = [], studyData = [], currentIdx = 0, score = 0, isQuizMode = false, isAnswerVisible = false, isSelectionMade = false;
 
-    // 🚀 데이터 로드 (서버가 출석을 직접 처리하므로 HTML은 결과만 받음)
     async function loadData() {
         try {
             const response = await fetch(API_URL);
-            if (!response.ok) throw new Error('Network fail');
+            const data = await response.json();
             
-            const resData = await response.json();
-            
-            // 1. 데이터 가공
-            const rawKanji = Array.isArray(resData) ? resData : resData.kanji;
-            allData = rawKanji.slice(1).map(c => ({
+            // 시트의 데이터 구조(배열)를 객체로 변환
+            const rawData = Array.isArray(data) ? data : data.kanji;
+            allData = rawData.slice(1).map(c => ({
                 kanji: c[0], mean: c[1], kun: c[2]||"ー", on: c[3]||"ー", stars: parseInt(c[4])||0
             })).filter(i => i.kanji);
 
-            // 2. 출석 일수 표시 (서버가 오늘 기록 여부를 확인해 계산해 준 숫자)
-            const badge = document.getElementById('streak-badge');
-            badge.innerText = `🔥 연속 ${resData.streak || 0}일`;
-            badge.style.display = 'block';
-
-            updateHomeCounts();
-            renderList();
-            
             document.getElementById('loader').style.display = 'none';
             document.getElementById('mode-selection').style.display = 'flex';
         } catch (e) { 
-            console.error('Loading Error:', e);
-            document.getElementById('loader').innerText = "❌ 데이터 로드 실패"; 
+            document.getElementById('loader').innerText = "❌ 로드 실패 (URL 배포 확인 필요)"; 
         }
-    }
-
-    // 키보드 조작
-    window.addEventListener('keydown', (e) => {
-        if (document.getElementById('quiz-content').style.display === 'none') return;
-        if (isQuizMode) {
-            if (!isSelectionMade && e.key >= '1' && e.key <= '4') {
-                const btns = document.querySelectorAll('.choice-btn');
-                const targetIdx = parseInt(e.key) - 1;
-                if (btns[targetIdx]) btns[targetIdx].click();
-            } else if (isSelectionMade && e.key === 'Enter') { moveToNextQuiz(); }
-        } else {
-            if (e.key === 'Enter') {
-                if (!isAnswerVisible) showAnswer();
-                else nextQuestion();
-            }
-        }
-    });
-
-    function updateHomeCounts() {
-        document.getElementById('count-all').innerText = `(${allData.length})`;
-        document.getElementById('count-star').innerText = `(${allData.filter(i=>i.stars>0).length})`;
-    }
-
-    function toggleList(show) { document.getElementById('list-modal').style.display = show ? 'flex' : 'none'; }
-
-    function renderList() {
-        const body = document.getElementById('kanji-list-body');
-        body.innerHTML = allData.map(i => `
-            <div class="kanji-item">
-                <div class="list-kanji" lang="ja">${i.kanji}</div>
-                <div class="list-info">
-                    <div class="list-mean">${i.mean}</div>
-                    <div class="list-reading">훈: ${i.kun} | 음: ${i.on}</div>
-                </div>
-            </div>
-        `).join('');
     }
 
     function startStudy(mode) {
@@ -202,12 +127,15 @@
         else if (mode === 'recent') studyData = allData.slice(-40).sort(()=>Math.random()-0.5);
         else if (mode === 'star') studyData = allData.filter(i=>i.stars>0).sort(()=>Math.random()-0.5);
         else studyData = [...allData].sort(()=>Math.random()-0.5);
+        
+        if(studyData.length === 0) { alert("데이터가 없습니다."); return; }
         initView();
     }
 
     function startQuiz() {
         isQuizMode = true; score = 0;
         studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
+        if(studyData.length === 0) { alert("데이터가 없습니다."); return; }
         initView();
     }
 
@@ -215,16 +143,14 @@
         currentIdx = 0;
         document.getElementById('mode-selection').style.display = 'none';
         document.getElementById('quiz-content').style.display = 'block';
-        document.getElementById('streak-badge').style.display = 'none';
         updateCard();
     }
 
     function updateCard() {
         const item = studyData[currentIdx];
-        const starEl = document.getElementById('star-display');
         document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${studyData.length}`;
         document.getElementById('kanji-display').innerText = item.kanji;
-        starEl.innerText = '★'.repeat(Math.min(item.stars, 5));
+        document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
         
         isAnswerVisible = false;
         isSelectionMade = false;
@@ -257,53 +183,22 @@
         choices.forEach((choice, idx) => {
             const btn = document.createElement('button');
             btn.className = 'choice-btn';
-            btn.dataset.kanji = choice.kanji;
-            btn.innerHTML = `<span class="choice-num">${idx + 1}</span> <span>${choice.mean} (${choice.on})</span>`;
-            btn.onclick = () => handleQuizSelection(btn, choice.kanji === correctItem.kanji);
+            btn.innerHTML = `<span class="choice-num">${idx + 1}</span> <span>${choice.mean}</span>`;
+            btn.onclick = () => {
+                if (isSelectionMade) return;
+                isSelectionMade = true;
+                if (choice.kanji === correctItem.kanji) { btn.classList.add('correct'); score++; }
+                else { 
+                    btn.classList.add('wrong'); 
+                    // 정답 강조
+                    Array.from(area.children).forEach(child => {
+                        if(child.innerText.includes(correctItem.mean)) child.classList.add('correct');
+                    });
+                }
+                document.getElementById('quiz-controls').style.display = 'block';
+            };
             area.appendChild(btn);
         });
-    }
-
-    async function handleQuizSelection(selectedBtn, isCorrect) {
-        if (isSelectionMade) return;
-        isSelectionMade = true;
-        const item = studyData[currentIdx];
-        const btns = document.querySelectorAll('.choice-btn');
-        btns.forEach(b => b.disabled = true);
-
-        if (isCorrect) {
-            selectedBtn.classList.add('correct');
-            score++;
-            if (item.stars > 0) updateStar('remove', true);
-        } else {
-            selectedBtn.classList.add('wrong');
-            btns.forEach(b => {
-                if (b.dataset.kanji === item.kanji) b.classList.add('correct');
-            });
-            updateStar('add', true);
-        }
-        document.getElementById('quiz-controls').style.display = 'block';
-    }
-
-    function moveToNextQuiz() {
-        if (currentIdx < studyData.length - 1) { currentIdx++; updateCard(); }
-        else { alert(`퀴즈 완료! 점수: ${score} / 10`); location.reload(); }
-    }
-
-    async function updateStar(action, isAuto = false) {
-        const item = studyData[currentIdx];
-        const starEl = document.getElementById('star-display');
-        try {
-            fetch(API_URL, { 
-                method: 'POST', 
-                mode: 'no-cors',
-                body: JSON.stringify({ kanji: item.kanji, action: action }) 
-            });
-            item.stars = (action === 'add') ? item.stars + 1 : Math.max(0, item.stars - 1);
-            starEl.innerText = '★'.repeat(Math.min(item.stars, 5));
-            starEl.classList.add('star-pop');
-            setTimeout(() => starEl.classList.remove('star-pop'), 300);
-        } catch (e) { if(!isAuto) alert("별 업데이트 실패"); }
     }
 
     function showAnswer() {
@@ -315,11 +210,27 @@
 
     function nextQuestion() {
         if (currentIdx < studyData.length - 1) { currentIdx++; updateCard(); }
-        else { alert("🎉 학습 완료!"); location.reload(); }
+        else { alert(isQuizMode ? `퀴즈 종료! 점수: ${score} / ${studyData.length}` : "학습이 완료되었습니다!"); location.reload(); }
     }
 
     function prevQuestion() { if (currentIdx > 0) { currentIdx--; updateCard(); } }
-    function goHome() { if (confirm("시작 화면으로 돌아갈까요?")) location.reload(); }
+
+    async function updateStar(action) {
+        const item = studyData[currentIdx];
+        fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ kanji: item.kanji, action: action }) });
+        item.stars = (action === 'add') ? item.stars + 1 : Math.max(0, item.stars - 1);
+        document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            if (isQuizMode && isSelectionMade) nextQuestion();
+            else if (!isQuizMode && !isAnswerVisible) showAnswer();
+            else if (!isQuizMode && isAnswerVisible) nextQuestion();
+        }
+    });
+
+    function moveToNextQuiz() { nextQuestion(); }
 
     loadData();
 </script>
