@@ -22,6 +22,7 @@
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
         .btn-list { background: white; color: var(--gray); border: 2px solid #eee; margin-top: 5px; }
+        .count-badge { font-size: 13px; font-weight: normal; opacity: 0.9; margin-left: 4px; }
 
         /* 목록 모달 */
         #list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
@@ -60,8 +61,8 @@
         <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 랜덤 10문제</button>
         <button class="mode-btn btn-quiz" onclick="startQuiz()">📝 객관식 퀴즈</button>
         <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 한자</button>
-        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 학습</button>
-        <button class="mode-btn btn-star-only" onclick="startStudy('star')">⭐ 별표 표시 한자</button>
+        <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 학습 <span id="count-all" class="count-badge"></span></button>
+        <button class="mode-btn btn-star-only" onclick="startStudy('star')">⭐ 별표 표시 한자 <span id="count-star" class="count-badge"></span></button>
         <button class="mode-btn btn-list" onclick="toggleList(true)">📋 전체 한자 목록 보기</button>
     </div>
 
@@ -117,6 +118,11 @@
             allData = data.slice(1).map(c => ({
                 kanji: c[0], mean: c[1], kun: c[2]||"ー", on: c[3]||"ー", stars: parseInt(c[4])||0, example: c[5]||""
             })).filter(i => i.kanji);
+
+            // 숫자 표시 업데이트
+            document.getElementById('count-all').innerText = `(${allData.length})`;
+            document.getElementById('count-star').innerText = `(${allData.filter(i => i.stars > 0).length})`;
+
             renderList();
             document.getElementById('loader').style.display = 'none';
             document.getElementById('mode-selection').style.display = 'flex';
