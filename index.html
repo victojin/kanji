@@ -43,8 +43,10 @@
         .example-box { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ddd; color: var(--primary); font-weight: bold; }
         
         .btn-container { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .main-controls { display: flex; gap: 10px; }
         button { padding: 16px; font-size: 16px; cursor: pointer; border: none; border-radius: 14px; font-weight: bold; transition: 0.2s; }
-        .btn-show { background: var(--primary); color: white; width: 100%; }
+        .btn-show { background: var(--primary); color: white; flex: 3; }
+        .btn-prev { background: var(--gray); color: white; flex: 1; }
         .btn-next { background: var(--success); color: white; width: 100%; }
     </style>
 </head>
@@ -81,7 +83,10 @@
         </div>
 
         <div class="btn-container" id="study-controls">
-            <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인 (Enter)</button>
+            <div class="main-controls" id="main-controls">
+                <button class="btn-prev" id="btn-prev-ui" onclick="prevQuestion()">←</button>
+                <button class="btn-show" id="btn-show" onclick="showAnswer()">정답 확인 (Enter)</button>
+            </div>
             <div id="after-answer-controls" style="display:none; flex-direction:column; gap:10px;">
                 <button class="btn-next" onclick="nextQuestion()">다음 문제 (Enter)</button>
                 <div style="display:flex; gap:10px;">
@@ -129,7 +134,7 @@
         if (mode === 'quick') studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
         else if (mode === 'recent') studyData = allData.slice(-40).reverse();
         else if (mode === 'star') studyData = allData.filter(i=>i.stars>0).sort(()=>Math.random()-0.5);
-        else studyData = [...allData].sort(()=>Math.random()-0.5); // 전체 학습 모드 랜덤 변경됨
+        else studyData = [...allData].sort(()=>Math.random()-0.5);
         if(studyData.length === 0) { alert("해당하는 한자가 없습니다."); return; }
         initView();
     }
@@ -152,14 +157,16 @@
         document.getElementById('example-display').innerText = item.example ? `📖 예시: ${item.example}` : "";
         isAnswerVisible = false;
         document.getElementById('answer-area').style.display = 'none';
+        document.getElementById('main-controls').style.display = 'flex';
         document.getElementById('btn-show').style.display = 'block';
         document.getElementById('after-answer-controls').style.display = 'none';
+        document.getElementById('btn-prev-ui').disabled = (currentIdx === 0);
     }
 
     function showAnswer() {
         isAnswerVisible = true;
         document.getElementById('answer-area').style.display = 'block';
-        document.getElementById('btn-show').style.display = 'none';
+        document.getElementById('main-controls').style.display = 'none';
         document.getElementById('after-answer-controls').style.display = 'flex';
     }
 
@@ -167,6 +174,8 @@
         if (currentIdx < studyData.length - 1) { currentIdx++; updateCard(); }
         else { alert("🎉 학습 완료!"); location.reload(); }
     }
+
+    function prevQuestion() { if (currentIdx > 0) { currentIdx--; updateCard(); } }
 
     async function updateStar(action) {
         const item = studyData[currentIdx];
