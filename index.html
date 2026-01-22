@@ -128,8 +128,8 @@
     function startStudy(mode) {
         if (mode === 'quick') studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
         else if (mode === 'recent') studyData = allData.slice(-40).reverse();
-        else if (mode === 'star') studyData = allData.filter(i=>i.stars>0);
-        else studyData = [...allData];
+        else if (mode === 'star') studyData = allData.filter(i=>i.stars>0).sort(()=>Math.random()-0.5);
+        else studyData = [...allData].sort(()=>Math.random()-0.5); // 전체 학습 모드 랜덤 변경됨
         if(studyData.length === 0) { alert("해당하는 한자가 없습니다."); return; }
         initView();
     }
