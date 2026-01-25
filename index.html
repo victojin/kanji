@@ -143,7 +143,7 @@
     function startStudy(mode) {
         isQuizMode = false;
         if (mode === 'quick') studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
-        else if (mode === 'recent') studyData = allData.slice(-40).reverse();
+        else if (mode === 'recent') studyData = allData.slice(-40).sort(()=>Math.random()-0.5); // 최근 40개 랜덤화
         else if (mode === 'star') studyData = allData.filter(i=>i.stars>0).sort(()=>Math.random()-0.5);
         else studyData = [...allData].sort(()=>Math.random()-0.5);
         if(studyData.length === 0) { alert("해당하는 한자가 없습니다."); return; }
