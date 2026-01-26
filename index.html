@@ -6,7 +6,7 @@
     <title>암기박사 - 일본어 한자</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --info: #9b59b6; --recent: #34495e; --quiz: #e67e22; --bg: #f0f2f5; --gray: #95a5a6; }
+        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --info: #9b59b6; --recent: #34495e; --quiz: #e67e22; --bg: #f0f2f5; --gray: #95a5a6; --time: #d35400; }
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; min-height: 450px; }
         
@@ -18,13 +18,13 @@
         .mode-btn { padding: 15px; font-size: 16px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
         .btn-quick { background: var(--info); }
         .btn-quiz { background: var(--quiz); }
+        .btn-time { background: var(--time); }
         .btn-recent { background: var(--recent); }
         .btn-all { background: var(--primary); }
         .btn-star-only { background: var(--warning); }
         .btn-list { background: white; color: var(--gray); border: 2px solid #eee; margin-top: 5px; }
         .count-badge { font-size: 13px; font-weight: normal; opacity: 0.9; margin-left: 4px; }
 
-        /* 목록 모달 */
         #list-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 90%; max-width: 450px; height: 80vh; border-radius: 24px; padding: 20px; overflow-y: auto; position: relative; }
         .modal-header { position: sticky; top: -20px; background: white; padding: 10px 0; border-bottom: 2px solid #eee; margin-bottom: 10px; z-index: 10; font-weight: bold; font-size: 18px; }
@@ -38,7 +38,6 @@
         .star-display { height: 24px; color: #f1c40f; font-size: 20px; margin-bottom: 5px; }
         .kanji-box { font-size: 100px; margin: 10px 0; color: #333; font-weight: bold; font-family: 'Noto Sans JP', sans-serif; }
         
-        /* 퀴즈 선택지 */
         .quiz-container { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .choice-btn { padding: 15px; font-size: 16px; background: #f8f9fa; border: 2px solid #eee; border-radius: 12px; cursor: pointer; text-align: left; display: flex; align-items: center; transition: 0.2s; }
         .choice-num { background: #ddd; color: #555; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; margin-right: 12px; flex-shrink: 0; }
@@ -56,6 +55,8 @@
         .btn-show { background: var(--primary); color: white; flex: 3; }
         .btn-prev { background: var(--gray); color: white; flex: 1; }
         .btn-next { background: var(--success); color: white; width: 100%; }
+        
+        #timer { font-size: 20px; color: var(--danger); font-weight: bold; margin-bottom: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -66,7 +67,8 @@
     <div id="mode-selection" style="display:none;">
         <h2 style="margin-top:20px;">일본어 한자 학습</h2>
         <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 랜덤 10문제</button>
-        <button class="mode-btn btn-quiz" onclick="startQuiz()">📝 객관식 퀴즈</button>
+        <button class="mode-btn btn-quiz" onclick="startQuiz(false)">📝 객관식 퀴즈</button>
+        <button class="mode-btn btn-time" onclick="startQuiz(true)">🔥 타임어택 (60초)</button>
         <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 한자</button>
         <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 학습 <span id="count-all" class="count-badge"></span></button>
         <button class="mode-btn btn-star-only" onclick="startStudy('star')">⭐ 별표 표시 한자 <span id="count-star" class="count-badge"></span></button>
@@ -74,7 +76,8 @@
     </div>
 
     <div id="quiz-content" style="display:none;">
-        <button class="home-btn" onclick="location.reload()"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+        <button class="home-btn" onclick="clearInterval(timerInterval); location.reload();"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+        <div id="timer">⏱️ 남은 시간: 60s</div>
         <div class="progress" id="progress-text">0 / 0</div>
         <div class="star-display" id="star-display"></div>
         <div class="kanji-box" id="kanji-display" lang="ja"></div>
@@ -117,6 +120,7 @@
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbzEIxqA9zMi4bGMC8nxoXdbFgoGxLv0UFA5H5YjgtS8hSYmi5fo1RVpy2YrBf1cmxTw/exec'; 
     let allData = [], studyData = [], currentIdx = 0, isAnswerVisible = false, isQuizMode = false, isSelectionMade = false;
+    let isTimeAttack = false, timeLeft = 60, timerInterval, score = 0;
 
     async function loadData() {
         try {
@@ -141,20 +145,36 @@
     }
 
     function startStudy(mode) {
-        isQuizMode = false;
+        isQuizMode = false; isTimeAttack = false;
         if (mode === 'quick') studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
-        else if (mode === 'recent') studyData = allData.slice(-40).sort(()=>Math.random()-0.5); // 최근 40개 랜덤화
+        else if (mode === 'recent') studyData = allData.slice(-40).sort(()=>Math.random()-0.5);
         else if (mode === 'star') studyData = allData.filter(i=>i.stars>0).sort(()=>Math.random()-0.5);
         else studyData = [...allData].sort(()=>Math.random()-0.5);
-        if(studyData.length === 0) { alert("해당하는 한자가 없습니다."); return; }
+        if(studyData.length === 0) { alert("데이터가 없습니다."); return; }
         initView();
     }
 
-    function startQuiz() {
-        isQuizMode = true;
-        studyData = [...allData].sort(()=>Math.random()-0.5).slice(0, 10);
+    function startQuiz(timeAttack) {
+        isQuizMode = true; isTimeAttack = timeAttack;
+        studyData = [...allData].sort(()=>Math.random()-0.5);
+        if(!timeAttack) studyData = studyData.slice(0, 10);
         if(studyData.length === 0) { alert("데이터가 부족합니다."); return; }
+        if(timeAttack) startTimer();
         initView();
+    }
+
+    function startTimer() {
+        timeLeft = 60; score = 0;
+        document.getElementById('timer').style.display = 'block';
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = `⏱️ 남은 시간: ${timeLeft}s`;
+            if(timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert(`⏰ 시간 종료! 당신의 점수는 ${score}점입니다.`);
+                location.reload();
+            }
+        }, 1000);
     }
 
     function initView() {
@@ -166,16 +186,14 @@
 
     function updateCard() {
         const item = studyData[currentIdx];
-        document.getElementById('progress-text').innerText = `${currentIdx + 1} / ${studyData.length}`;
+        document.getElementById('progress-text').innerText = isTimeAttack ? `점수: ${score}` : `${currentIdx + 1} / ${studyData.length}`;
         document.getElementById('kanji-display').innerText = item.kanji;
         document.getElementById('star-display').innerText = '★'.repeat(Math.min(item.stars, 5));
         document.getElementById('mean-display').innerText = item.mean;
         document.getElementById('kun-display').innerText = item.kun;
         document.getElementById('on-display').innerText = item.on;
         document.getElementById('example-display').innerText = item.example ? `📖 예시: ${item.example}` : "";
-        
-        isAnswerVisible = false;
-        isSelectionMade = false;
+        isAnswerVisible = false; isSelectionMade = false;
         document.getElementById('answer-area').style.display = 'none';
         document.getElementById('after-answer-controls').style.display = 'none';
 
@@ -192,8 +210,7 @@
     }
 
     function makeChoices(correctItem) {
-        const area = document.getElementById('choice-area');
-        area.innerHTML = '';
+        const area = document.getElementById('choice-area'); area.innerHTML = '';
         let wrongs = allData.filter(i => i.kanji !== correctItem.kanji).sort(()=>Math.random()-0.5).slice(0, 3);
         let choices = [...wrongs, correctItem].sort(()=>Math.random()-0.5);
         choices.forEach((choice, idx) => {
@@ -204,12 +221,13 @@
                 if (isSelectionMade) return;
                 isSelectionMade = true;
                 if (choice.kanji === correctItem.kanji) {
-                    btn.classList.add('correct');
+                    btn.classList.add('correct'); score++;
+                    if(isTimeAttack) { setTimeout(nextQuestion, 500); return; }
                 } else {
                     btn.classList.add('wrong');
-                    Array.from(area.children).forEach(b => {
-                        if (b.innerText.includes(correctItem.mean)) b.classList.add('correct');
-                    });
+                    // 오답 시 별 자동 추가 로직
+                    updateStar('add');
+                    Array.from(area.children).forEach(b => { if (b.innerText.includes(correctItem.mean)) b.classList.add('correct'); });
                 }
                 showAnswer();
             };
@@ -226,7 +244,7 @@
 
     function nextQuestion() {
         if (currentIdx < studyData.length - 1) { currentIdx++; updateCard(); }
-        else { alert("🎉 학습 완료!"); location.reload(); }
+        else { clearInterval(timerInterval); alert("🎉 모든 문제를 풀었습니다!"); location.reload(); }
     }
 
     function prevQuestion() { if (currentIdx > 0) { currentIdx--; updateCard(); } }
@@ -239,7 +257,7 @@
     }
 
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && document.getElementById('quiz-content').style.display !== 'none') {
+        if (e.key === 'Enter' && document.getElementById('quiz-content').style.display !== 'none' && !isTimeAttack) {
             if (!isAnswerVisible && !isQuizMode) showAnswer(); 
             else if (isAnswerVisible) nextQuestion();
         }
