@@ -6,7 +6,7 @@
     <title>암기박사 - 일본어 한자</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --info: #9b59b6; --recent: #34495e; --quiz: #e67e22; --bg: #f0f2f5; --gray: #95a5a6; --time: #d35400; }
+        :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --info: #9b59b6; --recent: #34495e; --quiz: #e67e22; --bg: #f0f2f5; --gray: #95a5a6; --time: #d35400; --short: #16a085; }
         body { font-family: 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: var(--bg); }
         .card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 90%; max-width: 400px; text-align: center; position: relative; min-height: 450px; }
         
@@ -18,6 +18,7 @@
         .mode-btn { padding: 15px; font-size: 16px; font-weight: bold; border-radius: 15px; border: none; cursor: pointer; color: white; transition: 0.2s; }
         .btn-quick { background: var(--info); }
         .btn-quiz { background: var(--quiz); }
+        .btn-short { background: var(--short); }
         .btn-time { background: var(--time); }
         .btn-recent { background: var(--recent); }
         .btn-all { background: var(--primary); }
@@ -44,6 +45,10 @@
         .choice-btn.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
         .choice-btn.wrong { background: var(--danger) !important; color: white !important; border-color: var(--danger) !important; }
 
+        #short-answer-area { margin-top: 20px; display: none; flex-direction: column; gap: 10px; }
+        #input-answer { padding: 15px; font-size: 18px; border-radius: 12px; border: 2px solid #ddd; text-align: center; outline: none; }
+        #input-answer:focus { border-color: var(--short); }
+
         .answer-area { display: none; margin-top: 20px; text-align: left; border-top: 1px solid #eee; padding-top: 20px; }
         .mean { font-size: 26px; font-weight: bold; color: var(--danger); text-align: center; margin-bottom: 15px; }
         .readings { font-size: 16px; color: #444; background: #f9f9f9; padding: 15px; border-radius: 12px; line-height: 1.8; }
@@ -67,8 +72,9 @@
     <div id="mode-selection" style="display:none;">
         <h2 style="margin-top:20px;">일본어 한자 학습</h2>
         <button class="mode-btn btn-quick" onclick="startStudy('quick')">⚡ 랜덤 10문제</button>
-        <button class="mode-btn btn-quiz" onclick="startQuiz(false)">📝 객관식 퀴즈</button>
-        <button class="mode-btn btn-time" onclick="startQuiz(true)">🔥 타임어택 (60초)</button>
+        <button class="mode-btn btn-quiz" onclick="startQuiz('choice')">📝 객관식 퀴즈</button>
+        <button class="mode-btn btn-short" onclick="startQuiz('short')">✍️ 주관식 퀴즈</button>
+        <button class="mode-btn btn-time" onclick="startQuiz('time')">🔥 타임어택 (60초)</button>
         <button class="mode-btn btn-recent" onclick="startStudy('recent')">📅 최근 추가 한자</button>
         <button class="mode-btn btn-all" onclick="startStudy('all')">전체 한자 학습 <span id="count-all" class="count-badge"></span></button>
         <button class="mode-btn btn-star-only" onclick="startStudy('star')">⭐ 별표 표시 한자 <span id="count-star" class="count-badge"></span></button>
@@ -83,6 +89,11 @@
         <div class="kanji-box" id="kanji-display" lang="ja"></div>
         
         <div id="choice-area" class="quiz-container" style="display:none;"></div>
+
+        <div id="short-answer-area">
+            <input type="text" id="input-answer" placeholder="뜻을 입력하세요" autocomplete="off">
+            <button class="mode-btn btn-short" onclick="checkShortAnswer()">제출</button>
+        </div>
         
         <div class="answer-area" id="answer-area">
             <div class="mean" id="mean-display"></div>
@@ -119,7 +130,7 @@
 
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbzEIxqA9zMi4bGMC8nxoXdbFgoGxLv0UFA5H5YjgtS8hSYmi5fo1RVpy2YrBf1cmxTw/exec'; 
-    let allData = [], studyData = [], currentIdx = 0, isAnswerVisible = false, isQuizMode = false, isSelectionMade = false;
+    let allData = [], studyData = [], currentIdx = 0, isAnswerVisible = false, isQuizMode = false, quizSubMode = 'choice', isSelectionMade = false;
     let isTimeAttack = false, timeLeft = 60, timerInterval, score = 0;
 
     async function loadData() {
@@ -154,12 +165,13 @@
         initView();
     }
 
-    function startQuiz(timeAttack) {
-        isQuizMode = true; isTimeAttack = timeAttack;
+    function startQuiz(subMode) {
+        isQuizMode = true; quizSubMode = subMode;
+        isTimeAttack = (subMode === 'time');
         studyData = [...allData].sort(()=>Math.random()-0.5);
-        if(!timeAttack) studyData = studyData.slice(0, 10);
+        if(subMode !== 'time') studyData = studyData.slice(0, 10);
         if(studyData.length === 0) { alert("데이터가 부족합니다."); return; }
-        if(timeAttack) startTimer();
+        if(isTimeAttack) startTimer();
         initView();
     }
 
@@ -198,11 +210,21 @@
         document.getElementById('after-answer-controls').style.display = 'none';
 
         if (isQuizMode) {
-            document.getElementById('choice-area').style.display = 'flex';
-            document.getElementById('main-controls').style.display = 'none';
-            makeChoices(item);
+            if (quizSubMode === 'choice' || quizSubMode === 'time') {
+                document.getElementById('choice-area').style.display = 'flex';
+                document.getElementById('short-answer-area').style.display = 'none';
+                document.getElementById('main-controls').style.display = 'none';
+                makeChoices(item);
+            } else if (quizSubMode === 'short') {
+                document.getElementById('choice-area').style.display = 'none';
+                document.getElementById('short-answer-area').style.display = 'flex';
+                document.getElementById('main-controls').style.display = 'none';
+                document.getElementById('input-answer').value = '';
+                document.getElementById('input-answer').focus();
+            }
         } else {
             document.getElementById('choice-area').style.display = 'none';
+            document.getElementById('short-answer-area').style.display = 'none';
             document.getElementById('main-controls').style.display = 'flex';
             document.getElementById('btn-show').style.display = 'block';
             document.getElementById('btn-prev-ui').disabled = (currentIdx === 0);
@@ -225,7 +247,6 @@
                     if(isTimeAttack) { setTimeout(nextQuestion, 500); return; }
                 } else {
                     btn.classList.add('wrong');
-                    // 오답 시 별 자동 추가 로직
                     updateStar('add');
                     Array.from(area.children).forEach(b => { if (b.innerText.includes(correctItem.mean)) b.classList.add('correct'); });
                 }
@@ -233,6 +254,21 @@
             };
             area.appendChild(btn);
         });
+    }
+
+    function checkShortAnswer() {
+        if (isSelectionMade) return;
+        const input = document.getElementById('input-answer').value.trim();
+        const correctMeans = studyData[currentIdx].mean.split(',').map(m => m.trim()); // 쉼표 기준 분리
+        isSelectionMade = true;
+        
+        // 입력값이 분리된 정답 배열 중 하나라도 포함되어 있는지 확인
+        if (correctMeans.includes(input)) { 
+            score++; 
+        } else { 
+            updateStar('add'); 
+        }
+        showAnswer();
     }
 
     function showAnswer() {
@@ -257,9 +293,15 @@
     }
 
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && document.getElementById('quiz-content').style.display !== 'none' && !isTimeAttack) {
-            if (!isAnswerVisible && !isQuizMode) showAnswer(); 
-            else if (isAnswerVisible) nextQuestion();
+        if (document.getElementById('quiz-content').style.display === 'none') return;
+        if (e.key === 'Enter') {
+            if (isQuizMode && quizSubMode === 'short' && !isSelectionMade) {
+                checkShortAnswer();
+            } else if (isAnswerVisible) {
+                nextQuestion();
+            } else if (!isQuizMode && !isAnswerVisible) {
+                showAnswer();
+            }
         }
     });
 
